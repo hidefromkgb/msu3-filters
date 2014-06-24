@@ -116,8 +116,8 @@ EXSTYLE WS_EX_WINDOWEDGE
 FONT 9, "Verdana", 400, 0, 1
 {
     CTEXT           "Тип собелевского фильтра:", IDC_STATIC, 8, 16, 128, 12, SS_CENTER | SS_CENTERIMAGE
-    AUTORADIOBUTTON "Горизонтальный", FBR_HORZ, 8, 28, 128, 12, WS_TABSTOP
-    AUTORADIOBUTTON "Вертикальный", FBR_VERT, 8, 40, 128, 12, WS_TABSTOP
+    AUTOCHECKBOX    "Горизонтальный", FBR_HORZ, 8, 28, 128, 12, WS_TABSTOP
+    AUTOCHECKBOX    "Вертикальный", FBR_VERT, 8, 40, 128, 12, WS_TABSTOP
     AUTOCHECKBOX    "Идти справа налево / снизу вверх", FBC_FREV, 8, 60, 128, 12, BS_MULTILINE
 }
 

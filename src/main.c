@@ -490,7 +490,15 @@ void SobelEdge(CONF *vcnf, DWORD iact) {
         BYTE *src = curr->bptr;
 
         frev = (vcnf->data & 4)? -1 : 1;
-        vcnf->mprg = 50.0/(vcnf->area.bottom - vcnf->area.top);
+        vcnf->mprg = 100.0/((1 + ((vcnf->data & 1)? 2 : 0) + ((vcnf->data & 2)? 2 : 0)) * (vcnf->area.bottom - vcnf->area.top));
+
+        PICT *horz = MakePict();
+        AssignDIB(horz, curr->hdib, 2*curr->size.x, -curr->size.y);
+
+        PICT *vert = MakePict();
+        AssignDIB(vert, curr->hdib, 2*curr->size.x, -curr->size.y);
+
+        SHORT *hptr = (SHORT*)horz->bptr, *vptr = (SHORT*)vert->bptr;
 
         if (vcnf->data & 1) {
             for (y = vcnf->area.top; y < vcnf->area.bottom; y++) {
@@ -507,15 +515,15 @@ void SobelEdge(CONF *vcnf, DWORD iact) {
             for (y = vcnf->area.top + 1; y < vcnf->area.bottom - 1; y++) {
                 dpos = (vcnf->area.left + (y * curr->size.x)) * ZZ;
                 for (x = vcnf->area.left; x < vcnf->area.right; x++) {
-                    ((BGRA*)(src + dpos - ZZ))->B = min(255, max(0, dst[dpos + 0] + dst[dpos + z + 0] + dst[dpos - z + 0]));
-                    ((BGRA*)(src + dpos - ZZ))->G = min(255, max(0, dst[dpos + 1] + dst[dpos + z + 1] + dst[dpos - z + 1]));
-                    ((BGRA*)(src + dpos - ZZ))->R = min(255, max(0, dst[dpos + 2] + dst[dpos + z + 2] + dst[dpos - z + 2]));
+                    hptr[dpos + 0] = dst[dpos + 0] + dst[dpos + z + 0] + dst[dpos - z + 0];
+                    hptr[dpos + 1] = dst[dpos + 1] + dst[dpos + z + 1] + dst[dpos - z + 1];
+                    hptr[dpos + 2] = dst[dpos + 2] + dst[dpos + z + 2] + dst[dpos - z + 2];
                     dpos += ZZ;
                 }
                 Progress(vcnf);
             }
         }
-        else {
+        if (vcnf->data & 2) {
             for (y = vcnf->area.top; y < vcnf->area.bottom; y++) {
                 dpos = (vcnf->area.left + 1 + (y * curr->size.x)) * ZZ;
                 for (x = vcnf->area.left + 1; x < vcnf->area.right - 1; x++) {
@@ -530,14 +538,53 @@ void SobelEdge(CONF *vcnf, DWORD iact) {
             for (y = vcnf->area.top + 1; y < vcnf->area.bottom - 1; y++) {
                 dpos = (vcnf->area.left + (y * curr->size.x)) * ZZ;
                 for (x = vcnf->area.left; x < vcnf->area.right; x++) {
-                    ((BGRA*)(src + dpos - ZZ))->B = min(255, max(0, frev * (dst[dpos + z + 0] - (LONG)dst[dpos - z + 0])));
-                    ((BGRA*)(src + dpos - ZZ))->G = min(255, max(0, frev * (dst[dpos + z + 1] - (LONG)dst[dpos - z + 1])));
-                    ((BGRA*)(src + dpos - ZZ))->R = min(255, max(0, frev * (dst[dpos + z + 2] - (LONG)dst[dpos - z + 2])));
+                    vptr[dpos + 0] = frev * (dst[dpos + z + 0] - (LONG)dst[dpos - z + 0]);
+                    vptr[dpos + 1] = frev * (dst[dpos + z + 1] - (LONG)dst[dpos - z + 1]);
+                    vptr[dpos + 2] = frev * (dst[dpos + z + 2] - (LONG)dst[dpos - z + 2]);
                     dpos += ZZ;
                 }
                 Progress(vcnf);
             }
         }
+        if ((vcnf->data & 3) == 1) {
+            for (y = vcnf->area.top + 1; y < vcnf->area.bottom - 1; y++) {
+                dpos = (vcnf->area.left + (y * curr->size.x)) * ZZ;
+                for (x = vcnf->area.left; x < vcnf->area.right; x++) {
+                    ((BGRA*)(src + dpos - ZZ))->B = min(255, max(0, hptr[dpos + 0]));
+                    ((BGRA*)(src + dpos - ZZ))->G = min(255, max(0, hptr[dpos + 1]));
+                    ((BGRA*)(src + dpos - ZZ))->R = min(255, max(0, hptr[dpos + 2]));
+                    dpos += ZZ;
+                }
+                Progress(vcnf);
+            }
+        }
+        else if ((vcnf->data & 3) == 2) {
+            for (y = vcnf->area.top + 1; y < vcnf->area.bottom - 1; y++) {
+                dpos = (vcnf->area.left + (y * curr->size.x)) * ZZ;
+                for (x = vcnf->area.left; x < vcnf->area.right; x++) {
+                    ((BGRA*)(src + dpos - ZZ))->B = min(255, max(0, vptr[dpos + 0]));
+                    ((BGRA*)(src + dpos - ZZ))->G = min(255, max(0, vptr[dpos + 1]));
+                    ((BGRA*)(src + dpos - ZZ))->R = min(255, max(0, vptr[dpos + 2]));
+                    dpos += ZZ;
+                }
+                Progress(vcnf);
+            }
+        }
+        else if ((vcnf->data & 3) == 3) {
+            for (y = vcnf->area.top + 1; y < vcnf->area.bottom - 1; y++) {
+                dpos = (vcnf->area.left + (y * curr->size.x)) * ZZ;
+                for (x = vcnf->area.left; x < vcnf->area.right; x++) {
+                    ((BGRA*)(src + dpos - ZZ))->B = min(255, sqrt((LONG)hptr[dpos + 0]*hptr[dpos + 0] + (LONG)vptr[dpos + 0]*vptr[dpos + 0]));
+                    ((BGRA*)(src + dpos - ZZ))->G = min(255, sqrt((LONG)hptr[dpos + 1]*hptr[dpos + 1] + (LONG)vptr[dpos + 1]*vptr[dpos + 1]));
+                    ((BGRA*)(src + dpos - ZZ))->R = min(255, sqrt((LONG)hptr[dpos + 2]*hptr[dpos + 2] + (LONG)vptr[dpos + 2]*vptr[dpos + 2]));
+                    dpos += ZZ;
+                }
+                Progress(vcnf);
+            }
+        }
+        FreePictTree(&horz);
+        FreePictTree(&vert);
+
         FreePictTree(&ptmp);
     }
 }
@@ -827,7 +874,7 @@ void RotateFlt(CONF *vcnf, DWORD iact) {
                    | (abs(angl) % 181) | ((angl < 0)? 0x100 : 0);
     }
     else {
-        LONG x, y, dpos, qwid, qhei;
+        LONG x, y, dpos;
         FLOAT qsin, qcos;
         BYTE *dst, *src;
 
@@ -865,8 +912,6 @@ void RotateFlt(CONF *vcnf, DWORD iact) {
             curr->size.x &= -2;
             curr->size.y &= -2;
         }
-        qwid = tr(x / 2.0);
-        qhei = tr(y / 2.0);
 
         AssignDIB(curr, curr->prev->hdib, curr->size.x, -curr->size.y);
         src = curr->prev->bptr;
